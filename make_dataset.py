@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import click
 import logging
 import pandas as pd
 import zipfile
@@ -50,8 +49,6 @@ class GastosDiretosExtractor:
 
     CAT_ID_COLS = [colname + "-ID" for colname in CAT_COLS]
 
-    EXTRACT_ANOMES = re.compile('\d{6}')
-
 
     def __init__(self, include_filter):
 
@@ -73,19 +70,10 @@ class GastosDiretosExtractor:
 
         self.logger.info('>Processando arquivo {}'.format(filepath))
         
-        with zipfile.ZipFile(filepath, 'r') as zip_ref:
-            
-            # TODO: assume que há apenas um arquivo
-            filename =zip_ref.namelist()[0]
-                
-            with zip_ref.open(filename) as zip_file:
-        
-                #http://stackoverflow.com/questions/13651117/pandas-filter-lines-on-load-in-read-csv
-                iter_csv = pd.read_csv(zip_file, **GastosDiretosExtractor.READ_CFG)
+        iter_csv = pd.read_csv(filepath, **GastosDiretosExtractor.READ_CFG)
 
-                df = pd.concat([self.filter_in(chunk) for chunk in iter_csv])
+        return pd.concat([self.filter_in(chunk) for chunk in iter_csv])
 
-        return df
 
     def extract_data(self):
 
@@ -94,6 +82,8 @@ class GastosDiretosExtractor:
         dfs = [self.ler_zip_csv(zip_file) for zip_file in self.files]
 
         self.df = pd.concat(dfs, ignore_index=True).fillna("NÃO-ESPECIFICADO")
+        self.df['Valor'] = pd.to_numeric(self.df['Valor'].str.replace(",", "."))
+
 
     def make_encoders(self):
 
